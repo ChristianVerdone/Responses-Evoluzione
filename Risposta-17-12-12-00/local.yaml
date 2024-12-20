@@ -1,0 +1,15 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "red_wine_classifier"
+
+INGEST_LOCATION: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+TRANSFORM_PARAMS: {}
+ESTIMATOR_PARAMS: {'max_iter': 1000, 'tol': 1e-3}
+VALIDATION_THRESHOLDS: {'f1_score': 0.75, 'precision_score': 0.70, 'recall_score': 0.65}
+ALLOW_NON_VALIDATED_MODEL: false
+PREDICTION_PARAMS: {'format': 'csv', 'location': './data/predictions.csv'}
