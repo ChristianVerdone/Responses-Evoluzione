@@ -1,0 +1,42 @@
+# Define the recipe name based on the model type (classification in this case)
+name: "classification"  # Replace with "classification" or "regression"
+
+# Define steps involved in the MLflow pipeline
+model_training:
+  # Reference the Python module containing the training logic
+  module: "train_model.py"
+  # Define function within the module to be executed for training
+  function: "train_model"
+  # Input data for the training step (reference transformed data from previous step)
+  inputs:
+    from_step: transform_data  # Reference output of transform_data step
+  # Parameters (reference split ratios from local.yaml)
+  params:
+    SPLIT_RATIOS: "{{ SPLIT_RATIOS }}"
+
+data_transform:
+  # Reference the Python module containing the data transformation logic
+  module: "train_model.py"
+  # Define function within the module to be executed for transformation
+  function: "transform_data"
+  # Input data for the transformation step (reference raw data from ingest_data step)
+  inputs:
+    from_step: ingest_data
+
+data_ingestion:
+  # Reference the Python module containing the data ingestion logic
+  module: "train_model.py"
+  # Define function within the module to be executed for data ingestion
+  function: "ingest_data"
+  # Expected arguments for the data ingestion function (data paths)
+  params:
+    file_paths: "{{ DATA_PATHS }}"
+
+# Define evaluation metrics (to be populated after training)
+evaluation:
+  f1_score: '{{ F1_SCORE }}'
+  precision_score: '{{ PRECISION_SCORE }}'
+  recall_score: '{{ RECALL_SCORE }}'
+
+# Allow registration by default (can be overridden in local.yaml)
+allow_non_validated_model: True

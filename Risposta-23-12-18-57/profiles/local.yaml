@@ -1,0 +1,13 @@
+# Define data paths (replace with actual file paths)
+DATA_PATHS:
+  - ./data/winequality-white.csv
+  - ./data/winequality-red.csv
+
+# Define split ratios for training, validation, and testing
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Thresholds for evaluation metrics (set based on your requirements)
+# You can adjust these values as needed
+F1_SCORE_THRESHOLD: 0.8  # Example threshold for F1 score
+
+# Additional configuration parameters can be added here as needed

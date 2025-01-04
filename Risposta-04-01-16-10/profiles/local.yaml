@@ -1,0 +1,4 @@
+# Parametri di split
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# (Potrebbero esserci altri parametri in base alle tue esigenze)

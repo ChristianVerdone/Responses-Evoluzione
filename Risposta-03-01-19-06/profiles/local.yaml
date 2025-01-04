@@ -1,0 +1,16 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+TRANSFORM_PARAMS: {}
+ESTIMATOR_PARAMS:
+  n_estimators: 100
+  max_depth: 10
+  random_state: 42
+INGEST_CONFIG:
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]

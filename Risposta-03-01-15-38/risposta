@@ -1,0 +1,188 @@
+Ecco la traduzione dello script Python in una recipe di MLflow, con i vari step separati e i file `recipe.yaml` e `local.yaml` configurati come richiesto.
+
+### Script Python separati per i vari step
+
+#### Step di Ingestione (`ingest.py`)
+```python
+import pandas as pd
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def ingest_data(file_paths):
+    """
+    Carica i dati dei vini bianco e rosso con il delimitatore corretto.
+
+    :param file_paths: Lista dei percorsi dei file
+    :return: DataFrame contenente i dati uniti
+    """
+    logger.info("Ingestione dei dati dai file: %s", file_paths)
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    return data
+
+# Esempio di utilizzo
+file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+data = ingest_data(file_paths)
+```
+
+#### Step di Trasformazione (`transform.py`)
+```python
+import pandas as pd
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def transform_data(data):
+    """
+    Esegue trasformazioni personalizzate sui dati.
+
+    :param data: DataFrame contenente i dati
+    :return: DataFrame trasformato
+    """
+    logger.info("Trasformazione dei dati.")
+    data = data.dropna()
+    return data
+
+# Esempio di utilizzo
+data = transform_data(data)
+```
+
+#### Step di Training (`train.py`)
+```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def train_model(X_train, y_train):
+    """
+    Addestra un modello RandomForest sui dati di training.
+
+    :param X_train: DataFrame delle caratteristiche di training
+    :param y_train: Serie dei target di training
+    :return: Modello addestrato
+    """
+    logger.info("Addestramento del modello RandomForest.")
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+
+# Esempio di utilizzo
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.2, random_state=42)
+model = train_model(X_train, y_train)
+```
+
+#### Step di Valutazione (`evaluate.py`)
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def evaluate_model(model, X_test, y_test):
+    """
+    Valuta il modello sui dati di test.
+
+    :param model: Modello addestrato
+    :param X_test: DataFrame delle caratteristiche di test
+    :param y_test: Serie dei target di test
+    :return: Tuple contenente f1_score, precision_score e recall_score
+    """
+    logger.info("Valutazione del modello.")
+    y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    return f1, precision, recall
+
+# Esempio di utilizzo
+f1, precision, recall = evaluate_model(model, X_test, y_test)
+```
+
+### File `recipe.yaml`
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest:
+    using: csv
+    location: {{INGEST_CONFIG.location}}
+    loader_method: {{INGEST_CONFIG.loader_method}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.75, 0.125, 0.125])}}
+  transform:
+    transform_params: {{TRANSFORM_PARAMS|default({'method': 'dropna'})}}
+  train:
+    estimator_params: {{ESTIMATOR_PARAMS|default({'n_estimators': 100})}}
+  validate:
+    thresholds:
+      f1_score: {{VALIDATION_THRESHOLDS.f1_score|default(0.75)}}
+      precision_score: {{VALIDATION_THRESHOLDS.precision_score|default(0.75)}}
+      recall_score: {{VALIDATION_THRESHOLDS.recall_score|default(0.75)}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL|default(false)}}
+  ingest_scoring:
+    using: csv
+    location: {{INGEST_SCORING_CONFIG.location}}
+    loader_method: {{INGEST_SCORING_CONFIG.loader_method}}
+  predict:
+    format: {{PREDICTION_CONFIG.format}}
+    location: {{PREDICTION_CONFIG.location}}
+```
+
+### File `local.yaml`
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: "ingest_data"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS:
+  method: 'dropna'
+
+ESTIMATOR_PARAMS:
+  n_estimators: 100
+
+VALIDATION_THRESHOLDS:
+  f1_score: 0.75
+  precision_score: 0.75
+  recall_score: 0.75
+
+ALLOW_NON_VALIDATED_MODEL: false
+
+INGEST_SCORING_CONFIG:
+  location: "./data/scoring_data.csv"
+  loader_method: "ingest_scoring_data"
+
+PREDICTION_CONFIG:
+  format: "csv"
+  location: "./data/predictions.csv"
+```
+
+Questi file dovrebbero coprire tutti gli step necessari per la tua recipe di MLflow, inclusi i parametri di valutazione, permessi di registrazione, configurazioni di ingest e configurazioni di predizione. Se hai bisogno di ulteriori dettagli o assistenza, fammi sapere!

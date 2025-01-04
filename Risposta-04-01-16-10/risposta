@@ -1,0 +1,119 @@
+## Analisi dello Script Python e Traduzione in Recipe MLflow
+
+**Ottimo!** Vediamo come tradurre lo script Python fornito in una recipe MLflow utilizzando file separati e Jinja templating.
+
+**Analisi dello Script:**
+
+Lo script fornito esegue una classificazione binaria utilizzando un modello Random Forest. Ecco le componenti principali:
+
+1. **Ingestazione dei dati:** Carica due file CSV separati per vini bianchi e rossi, li unisce e aggiunge una colonna `is_red` per identificare il tipo di vino.
+2. **Trasformazione dei dati:** Rimuove i valori nulli (può essere personalizzato).
+3. **Divisione dei dati:** Separa i dati in train, validation e test utilizzando proporzioni definite in `SPLIT_RATIOS` (da `local.yaml`).
+4. **Addestramento del modello:** Addestra un modello Random Forest Classifier.
+5. **Valutazione del modello:** Calcola F1-score, precision e recall sul test set.
+6. **MLflow Tracking:**
+   * Avvia un run di MLflow.
+   * Salva il modello addestrato con MLflow.
+   * Logga parametri (tipo di modello) e metriche (F1-score, precision, recall).
+
+**Nome della Recipe:**
+
+Poiché lo script esegue una classificazione binaria, il nome della recipe sarà `sklearn_classification_experiment`.
+
+**File System:**
+
+Organizziamo i file come segue:
+
+* `script.py`: Contiene lo script Python originale.
+* `recipe.yaml`: Definisce la recipe MLflow.
+* `local.yaml`: Contiene parametri di configurazione.
+
+**Jinja Templating:**
+
+Utilizzeremo Jinja templating nel file `recipe.yaml` per riferenziare i parametri definiti in `local.yaml`.
+
+**Traduzione in Recipe MLflow**
+
+**1. local.yaml:**
+
+```yaml
+# Parametri di split
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# (Potrebbero esserci altri parametri in base alle tue esigenze)
+```
+
+**2. recipe.yaml:**
+
+```yaml
+name: "{{experiment_name}}"
+
+# Import degli step (potrebbero esserci step aggiuntivi)
+import:
+  - path: ../modules/ingest.py  # Sostituisci con il percorso corretto
+  - path: ../modules/transform.py  # Sostituisci con il percorso corretto
+  - path: ../modules/train_model.py  # Sostituisci con il percorso corretto
+  - path: ../modules/evaluate_model.py  # Sostituisci con il percorso corretto
+
+# Step di esecuzione
+execute:
+  - name: ingest_data
+    run:
+      local:
+        python_module: ingest
+        function: ingest_data
+        args:
+          - "{{ input_data_paths }}"  # Sostituisci con il parametro corretto
+
+  - name: transform_data
+    run:
+      local:
+        python_module: transform
+        function: transform_data
+        args:
+          - "{{ output_of_previous_step }}"
+
+  - name: split_data
+    run:
+      local:
+        python_module: script  # Sostituisci con il percorso corretto
+        function: train_test_split  # Modifica se la funzione è diversa
+        args:
+          - "{{ output_of_previous_step }}"
+          - "{{ SPLIT_RATIOS }}"
+
+  - name: train_model
+    run:
+      local:
+        python_module: train_model
+        function: train_model
+        args:
+          - "{{ training_data }}"
+          - "{{ training_target }}"
+
+  - name: evaluate_model
+    run:
+      local:
+        python_module: evaluate_model
+        function: evaluate_model
+        args:
+          - "{{ trained_model }}"
+          - "{{ validation_data }}"
+          - "{{ validation_target }}"
+
+    # (Potrebbero esserci step di scoring e registrazione del modello)
+
+# Output dei passi (potrebbero esserci output aggiuntivi)
+output:
+  artifacts:
+    - name: model
+      path: "mlflow://{{experiment_name}}/model"
+  metrics:
+    - name: f1_score
+    - name: precision_score
+    - name: recall_score
+
+# Parametri di default (potrebbero esserci parametri aggiuntivi)
+params:
+  experiment_name: "{{ MLFLOW_EXPERIMENT_NAME }}"  # Sostituisci con la sorgente appropriata
+  input_data_paths: ["data/winequality-white.

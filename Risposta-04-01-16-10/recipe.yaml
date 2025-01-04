@@ -1,0 +1,71 @@
+name: "{{experiment_name}}"
+
+# Import degli step (potrebbero esserci step aggiuntivi)
+import:
+  - path: ../modules/ingest.py  # Sostituisci con il percorso corretto
+  - path: ../modules/transform.py  # Sostituisci con il percorso corretto
+  - path: ../modules/train_model.py  # Sostituisci con il percorso corretto
+  - path: ../modules/evaluate_model.py  # Sostituisci con il percorso corretto
+
+# Step di esecuzione
+execute:
+  - name: ingest_data
+    run:
+      local:
+        python_module: ingest
+        function: ingest_data
+        args:
+          - "{{ input_data_paths }}"  # Sostituisci con il parametro corretto
+
+  - name: transform_data
+    run:
+      local:
+        python_module: transform
+        function: transform_data
+        args:
+          - "{{ output_of_previous_step }}"
+
+  - name: split_data
+    run:
+      local:
+        python_module: script  # Sostituisci con il percorso corretto
+        function: train_test_split  # Modifica se la funzione è diversa
+        args:
+          - "{{ output_of_previous_step }}"
+          - "{{ SPLIT_RATIOS }}"
+
+  - name: train_model
+    run:
+      local:
+        python_module: train_model
+        function: train_model
+        args:
+          - "{{ training_data }}"
+          - "{{ training_target }}"
+
+  - name: evaluate_model
+    run:
+      local:
+        python_module: evaluate_model
+        function: evaluate_model
+        args:
+          - "{{ trained_model }}"
+          - "{{ validation_data }}"
+          - "{{ validation_target }}"
+
+    # (Potrebbero esserci step di scoring e registrazione del modello)
+
+# Output dei passi (potrebbero esserci output aggiuntivi)
+output:
+  artifacts:
+    - name: model
+      path: "mlflow://{{experiment_name}}/model"
+  metrics:
+    - name: f1_score
+    - name: precision_score
+    - name: recall_score
+
+# Parametri di default (potrebbero esserci parametri aggiuntivi)
+params:
+  experiment_name: "{{ MLFLOW_EXPERIMENT_NAME }}"  # Sostituisci con la sorgente appropriata
+  input_data_paths: ["data/winequality-white.
