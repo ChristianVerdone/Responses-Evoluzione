@@ -1,0 +1,139 @@
+## Classificazione della Recipe MLflow
+
+Basandosi sul fatto che lo script utilizza `RandomForestClassifier` per prevedere la qualità del vino (rosso o bianco) sulla base di altre caratteristiche, possiamo classificare la recipe come una recipe di **classificazione**.
+
+## Script Separti per i Vari Step
+
+1. **ingest_data.py:**
+
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+  """Carica i dati dei vini bianco e rosso e li prepara per l'analisi.
+
+  Args:
+      file_paths: Lista di percorsi ai file CSV contenenti i dati.
+
+  Returns:
+      Un dataframe Pandas che combina i dati dei vini bianchi e rossi.
+  """
+
+  data_white = pd.read_csv(file_paths[0], delimiter=";")
+  data_red = pd.read_csv(file_paths[1], delimiter=";")
+
+  data_white["is_red"] = 0
+  data_red["is_red"] = 1
+
+  data = pd.concat([data_white, data_red], ignore_index=True)
+  return data
+```
+
+2. **transform_data.py:**
+
+```python
+import pandas as pd
+
+def transform_data(data):
+  """Esempio di trasformazione dei dati (potrebbe essere personalizzato).
+
+  Args:
+      data: Dataframe Pandas contenente i dati da trasformare.
+
+  Returns:
+      Dataframe Pandas con i dati trasformati.
+  """
+
+  data = data.dropna()  # Rimuovi valori nulli
+  return data
+```
+
+3. **train_model.py:**
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+  """Addestra un modello Random Forest Classifier.
+
+  Args:
+      X_train: Matrice di features per l'addestramento.
+      y_train: Vettore di target per l'addestramento.
+
+  Returns:
+      Un modello RandomForestClassifier addestrato.
+  """
+
+  model = RandomForestClassifier()
+  model.fit(X_train, y_train)
+  return model
+```
+
+4. **evaluate_model.py:**
+
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+def evaluate_model(model, X_test, y_test):
+  """Valuta un modello classificatore.
+
+  Args:
+      model: Modello da valutare.
+      X_test: Matrice di features per la valutazione.
+      y_test: Vettore di target per la valutazione.
+
+  Returns:
+      Tuple contenente F1-score, precision e recall.
+  """
+
+  y_pred = model.predict(X_test)
+  f1 = f1_score(y_test, y_pred)
+  precision = precision_score(y_test, y_pred)
+  recall = recall_score(y_test, y_pred)
+  return f1, precision, recall
+```
+
+## File recipe.yaml
+
+```yaml
+recipe: "wine_quality_classification/v1" # nomedellarecipe
+
+target_col: "is_red"
+
+primary_metric: "f1_score"
+
+steps:
+  ingest:
+    using: "python"
+    module: "ingest_data.py"
+    function: "ingest_data"
+    params: {{INGEST_DATA_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform:
+    using: "python"
+    module: "transform_data.py"
+    function: "transform_data"
+  train:
+    using: "python"
+    module: "train_model.py"
+    function: "train_model"
+  evaluate:
+    metrics:
+      f1_score: 0.8  # Soglia F1-score (da personalizzare)
+      precision_score: 0.8  # Soglia Precision (da personalizzare)
+      recall_score: 0.8  # Soglia Recall (da personalizzare)
+    allow_non_validated_model: false  # Permetti registrazione se non superano soglie
+
+# Step di scoring o predizione possono essere aggiunti qui se presenti nello script originale
+```
+
+## File local.yaml
+
+```yaml
+experiment:
+  name: "wine_quality_classification_experiment"
+  tracking_uri: "sqlite:///metadata
+
+
+''' aggiunto local.yaml dopo una rigenerazione della risposta'''

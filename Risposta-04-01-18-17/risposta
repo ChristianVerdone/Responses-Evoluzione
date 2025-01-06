@@ -1,0 +1,24 @@
+Ho tradotto lo script Python fornito in una recipe di MLflow, separando gli script per i vari step e creando i file `recipe.yaml` e `local.yaml` come indicato. Ecco i file generati:
+
+1. **Script di ingestione (`ingest.py`):**
+   [ingest.py](blob:https://outlook.office.com/c00e35ec-fa2c-43a3-83da-63d6ba5eeeb9)
+
+2. **Script di trasformazione (`transform.py`):**
+   [transform.py](blob:https://outlook.office.com/b39bb94d-5858-4ff2-ba3d-baa6b9e4e455)
+
+3. **Script di addestramento (`train.py`):**
+   [train.py](blob:https://outlook.office.com/90036732-31ca-4412-8b18-62473ebb1fc5)
+
+4. **Script di valutazione (`evaluate.py`):**
+   [evaluate.py](blob:https://outlook.office.com/57136b99-0fdf-4af2-8470-7a1d60217d62)
+
+5. **Script principale (`main.py`):**
+   [main.py](blob:https://outlook.office.com/9617a536-0a2c-40f1-b8ab-9ab78b9f487e)
+
+6. **File `recipe.yaml`:**
+   [recipe.yaml](blob:https://outlook.office.com/91287801-6fbd-4620-83bd-e11b4ad388bd)
+
+7. **File `local.yaml`:**
+   [local.yaml](blob:https://outlook.office.com/2f43f71c-7c19-472f-84ef-167853496b8c)
+
+Se hai bisogno di ulteriori modifiche o chiarimenti, fammi sapere!

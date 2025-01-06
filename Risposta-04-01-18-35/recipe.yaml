@@ -1,0 +1,30 @@
+recipe: "wine_quality_classification/v1" # nomedellarecipe
+
+target_col: "is_red"
+
+primary_metric: "f1_score"
+
+steps:
+  ingest:
+    using: "python"
+    module: "ingest_data.py"
+    function: "ingest_data"
+    params: {{INGEST_DATA_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform:
+    using: "python"
+    module: "transform_data.py"
+    function: "transform_data"
+  train:
+    using: "python"
+    module: "train_model.py"
+    function: "train_model"
+  evaluate:
+    metrics:
+      f1_score: 0.8  # Soglia F1-score (da personalizzare)
+      precision_score: 0.8  # Soglia Precision (da personalizzare)
+      recall_score: 0.8  # Soglia Recall (da personalizzare)
+    allow_non_validated_model: false  # Permetti registrazione se non superano soglie
+
+# Step di scoring o predizione possono essere aggiunti qui se presenti nello script originale

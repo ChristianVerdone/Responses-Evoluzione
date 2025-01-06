@@ -1,0 +1,33 @@
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate: {{EVALUATE_CONFIG}}
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest_data
+
+TRANSFORM_CONFIG:
+  params: {}
+
+SPLIT_CONFIG:
+  split_ratios: [0.80, 0.10, 0.10]
+
+TRAIN_CONFIG:
+  estimator_params:
+    max_iter: 1000
+    tol: 1e-3
+
+EVALUATE_CONFIG:
+  validation_thresholds:
+    f1_score: 0.75
+    precision_score: 0.70
+    recall_score: 0.70
+  allow_non_validated_model: false

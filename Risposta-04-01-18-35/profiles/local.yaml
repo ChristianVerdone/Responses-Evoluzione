@@ -1,0 +1,28 @@
+experiment:
+  name: "wine_quality_classification_experiment"  # Nome dell'esperimento MLflow
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"  # URI di tracking per MLflow
+  artifact_location: "/metadata/mlflow/mlartifacts"  # Posizione degli artifact
+
+model_registry:
+  model_name: "wine_quality_classifier"  # Nome del modello per la registry
+
+# Parametri di ingestione (se presenti nello script)
+# ...
+INGEST_DATA_PARAMS:
+  # ...
+
+# Parametri di training (se presenti nello script)
+# ...
+TRAIN_MODEL_PARAMS:
+  # ...
+
+# Sfoglie di valutazione (da personalizzare se necessario)
+F1_THRESHOLD: 0.7
+PRECISION_THRESHOLD: 0.7
+RECALL_THRESHOLD: 0.7
+
+# Parametri di split (se non definiti nello script)
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+# Step di scoring e predizione (opzionali, da aggiungere se presenti nello script)
+# ...
