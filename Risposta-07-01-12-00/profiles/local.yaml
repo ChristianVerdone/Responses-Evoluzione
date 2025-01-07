@@ -1,0 +1,27 @@
+recipe: "classification/v1"
+target_col: "is_red"
+steps:
+  ingest:
+    using: csv
+    location: {{INGEST_CONFIG}}
+
+  transform:
+    config: {{TRANSFORM_CONFIG}}
+
+  train:
+    estimator_params: {{ESTIMATOR_PARAMS}}
+
+  validate:
+    thresholds:
+      f1_score: {{THRESHOLD_F1}}
+      precision_score: {{THRESHOLD_PRECISION}}
+      recall_score: {{THRESHOLD_RECALL}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL}}
+
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "./mlartifacts"
+
+model_registry:
+  model_name: "wine_quality_classifier"

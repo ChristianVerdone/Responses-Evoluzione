@@ -1,0 +1,18 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: custom_ingest
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_CONFIG:
+  using: custom
+  transformer_method: custom_transform
+
+F1_THRESHOLD: 0.8
+PRECISION_THRESHOLD: 0.8
+RECALL_THRESHOLD: 0.8
