@@ -1,0 +1,21 @@
+# Local.yaml example
+VALIDATION_THRESHOLDS = {
+    "f1_score": 0.8,
+    "precision_score": 0.75,
+    "recall_score": 0.7
+}
+ALLOW_NON_VALIDATED_MODEL = False
+INGEST_CONFIG = {
+    "using": "csv",
+    "location": ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+}
+TRANSFORM_CONFIG = {
+    "using": "transform_data",
+    "params": {}
+}
+TRAIN_CONFIG = {
+    "using": "train_model",
+    "params": {
+        "model_type": "RandomForest"
+    }
+}

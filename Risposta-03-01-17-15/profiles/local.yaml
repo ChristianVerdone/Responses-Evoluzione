@@ -1,0 +1,35 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_quality_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest_data
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS:
+  # Nessun parametro specifico per la trasformazione in questo caso
+
+ESTIMATOR_PARAMS:
+  # Nessun parametro specifico per l'estimatore in questo caso
+
+VALIDATION_THRESHOLDS:
+  f1_score: 0.7
+  precision_score: 0.7
+  recall_score: 0.7
+
+ALLOW_NON_VALIDATED_MODEL: false
+
+INGEST_SCORING_CONFIG:
+  path: "/data/scoring_input.csv"
+  format: "csv"
+
+PREDICTION_CONFIG:
+  format: "csv"
+  location: "/data/predictions.csv"

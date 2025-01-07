@@ -1,0 +1,18 @@
+recipe: "regression/v1"
+target_col: "is_red"
+primary_metric: "f1_score"
+
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: 
+    split_ratios: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_CONFIG}}
+  train:
+    using: custom
+    estimator_method: custom_estimator
+
+threshold:
+  metrics:
+    f1_score: {{F1_THRESHOLD}}
+    precision_score: {{PRECISION_THRESHOLD}} 
+    recall_score: {{RECALL_THRESHOLD}}
