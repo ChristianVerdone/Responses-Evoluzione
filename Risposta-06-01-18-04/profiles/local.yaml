@@ -1,0 +1,25 @@
+experiment:
+  name: "wine_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_quality_classifier"
+
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+INGEST_CONFIG:
+  using: "ingest.ingest_data"
+  file_paths:
+    - "./data/winequality-white.csv"
+    - "./data/winequality-red.csv"
+
+TRANSFORM_CONFIG:
+  using: "transform.transform_data"
+
+TRAIN_CONFIG:
+  using: "train.train_model"
+  model_type: "RandomForest" # Parametro aggiuntivo
+
+EVALUATE_CONFIG:
+  using: "evaluate.evaluate_model"

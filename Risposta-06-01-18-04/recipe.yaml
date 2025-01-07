@@ -1,0 +1,13 @@
+recipe: "wine_classification"
+
+target_col: "is_red"
+
+primary_metric: "f1_score"
+
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate: {{EVALUATE_CONFIG}}
