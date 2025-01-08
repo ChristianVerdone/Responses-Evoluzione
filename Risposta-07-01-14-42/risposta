@@ -1,0 +1,103 @@
+Ho tradotto lo script Python fornito in una recipe di MLflow, separando gli script per i vari step e creando i file `recipe.yaml` e `local.yaml` come indicato. Ecco i dettagli:
+
+### Script separati per i vari step
+
+1. **Ingestione dei dati** (`scripts/ingest.py`):
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+    # Carica i dati dei vini bianco e rosso con il delimitatore corretto
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+
+    # Aggiungi la colonna is_red (0 per bianco, 1 per rosso)
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    # Unisci i due dataset
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    return data
+```
+
+2. **Trasformazione dei dati** (`scripts/transform.py`):
+```python
+def transform_data(data):
+    # Esempio di trasformazioni personalizzate
+    data = data.dropna()  # Rimuovi valori nulli
+    return data
+```
+
+3. **Addestramento del modello** (`scripts/train.py`):
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+```
+
+4. **Valutazione del modello** (`scripts/evaluate.py`):
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    return f1, precision, recall
+```
+
+### File `recipe.yaml`
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform: {{TRANSFORM_PARAMS}}
+  train:
+    estimator_fn: scripts/train.py::train_model
+  evaluate:
+    threshold:
+      f1_score: 0.75
+      precision_score: 0.70
+      recall_score: 0.70
+    allow_non_validated_model: false
+```
+
+### File `local.yaml`
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: scripts/ingest.py::ingest_data
+
+TRANSFORM_PARAMS:
+  transform_fn: scripts/transform.py::transform_data
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+```
+
+### Dipendenze di Jinja
+Assicurati di avere Jinja2 installato nel tuo ambiente:
+```bash
+pip install jinja2
+```
+
+Puoi scaricare i file creati dal seguente link:
+- [recipe.yaml](blob:https://outlook.office.com/16144118-901e-4f09-91ba-e5373a536e87)
+
+Se hai bisogno di ulteriori modifiche o chiarimenti, fammi sapere!

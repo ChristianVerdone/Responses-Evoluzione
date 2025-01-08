@@ -1,0 +1,17 @@
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform: {{TRANSFORM_PARAMS}}
+  train:
+    estimator_fn: scripts/train.py::train_model
+  evaluate:
+    threshold:
+      f1_score: 0.75
+      precision_score: 0.70
+      recall_score: 0.70
+    allow_non_validated_model: false
