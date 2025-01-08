@@ -1,0 +1,211 @@
+Ecco come puoi tradurre il tuo script Python in una recipe di MLflow, separando i vari step e creando i file `recipe.yaml` e `local.yaml`:
+
+### Script Python per lo Step di Ingest
+```python
+import pandas as pd
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def ingest_data(file_paths):
+    """
+    Carica i dati dei vini bianco e rosso con il delimitatore corretto.
+
+    :param file_paths: Lista dei percorsi dei file CSV
+    :return: DataFrame contenente i dati uniti
+    """
+    logger.info(f"Caricamento dei dati dai file: {file_paths}")
+
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    return data
+
+# Esempio di utilizzo della funzione
+if __name__ == "__main__":
+    file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+    data = ingest_data(file_paths)
+    print(data.head())
+```
+
+### Script Python per lo Step di Split
+```python
+import pandas as pd
+import logging
+from sklearn.model_selection import train_test_split
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def split_data(data, target_col, split_ratios=[0.80, 0.10, 0.10]):
+    """
+    Divide il dataset nei set di training, validation e test.
+
+    :param data: DataFrame contenente i dati
+    :param target_col: Nome della colonna target
+    :param split_ratios: Lista di tre valori che rappresentano le proporzioni per training, validation e test
+    :return: Tuple contenente i DataFrame per training, validation e test
+    """
+    logger.info(f"Dividendo il dataset con i seguenti rapporti: {split_ratios}")
+
+    X = data.drop(columns=[target_col])
+    y = data[target_col]
+
+    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=1 - split_ratios[0], random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp,
+                                                    test_size=split_ratios[2] / (split_ratios[1] + split_ratios[2]),
+                                                    random_state=42)
+
+    logger.info(f"Dimensioni dei set: Training={len(X_train)}, Validation={len(X_val)}, Test={len(X_test)}")
+
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+# Esempio di utilizzo della funzione
+if __name__ == "__main__":
+    file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+    data = pd.read_csv(file_paths[0], delimiter=';')
+    target_col = "is_red"
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(data, target_col)
+    print(f"Training set:\n{X_train.head()}")
+```
+
+### Script Python per lo Step di Trasformazione
+```python
+import pandas as pd
+import logging
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def transform_data(data):
+    """
+    Trasforma i dati rimuovendo i valori nulli.
+
+    :param data: DataFrame contenente i dati
+    :return: DataFrame trasformato
+    """
+    logger.info("Trasformazione dei dati")
+    data = data.dropna()
+    return data
+
+# Esempio di utilizzo della funzione
+if __name__ == "__main__":
+    file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+    data = pd.read_csv(file_paths[0], delimiter=';')
+    transformed_data = transform_data(data)
+    print(transformed_data.head())
+```
+
+### Script Python per lo Step di Training
+```python
+import logging
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+# Configura il logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def train_model(X_train, y_train):
+    """
+    Addestra il modello RandomForestClassifier.
+
+    :param X_train: DataFrame contenente le caratteristiche di training
+    :param y_train: Series contenente il target di training
+    :return: Modello addestrato
+    """
+    logger.info("Addestramento del modello RandomForestClassifier")
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+
+def evaluate_model(model, X_test, y_test):
+    """
+    Valuta il modello utilizzando f1_score, precision_score e recall_score.
+
+    :param model: Modello addestrato
+    :param X_test: DataFrame contenente le caratteristiche di test
+    :param y_test: Series contenente il target di test
+    :return: Tuple contenente f1, precision e recall
+    """
+    logger.info("Valutazione del modello")
+    y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    return f1, precision, recall
+
+# Esempio di utilizzo delle funzioni
+if __name__ == "__main__":
+    file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+    data = pd.read_csv(file_paths[0], delimiter=';')
+    target_col = "is_red"
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(data, target_col)
+
+    model = train_model(X_train, y_train)
+    f1, precision, recall = evaluate_model(model, X_test, y_test)
+
+    print("F1 Score:", f1)
+    print("Precision Score:", precision)
+    print("Recall Score:", recall)
+```
+
+### File `recipe.yaml`
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest:
+    using: csv
+    location: {{INGEST_CONFIG.location}}
+    loader_method: ingest_data
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform:
+    transform_params: {{TRANSFORM_PARAMS|default({})}}
+  train:
+    estimator_params: {{ESTIMATOR_PARAMS|default({})}}
+  evaluate:
+    thresholds:
+      f1_score: 0.75
+      precision_score: 0.70
+      recall_score: 0.70
+    allow_non_validated_model: false
+
+# Esempio di file local.yaml
+INGEST_CONFIG:
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+TRANSFORM_PARAMS: {}
+ESTIMATOR_PARAMS:
+  max_iter: 1000
+  tol: 1e-3
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_quality_classifier"
+```
+
+### Spiegazione
+1. **Script Python**:
+    - Ho separato lo script originale in quattro script distinti per gli step di ingest, split, trasformazione e training.
+    - Ogni script include una funzione principale per il rispettivo step e un esempio di utilizzo.
+
+2. **File YAML**:
+    - `recipe.yaml` definisce la recipe di MLflow con i dettagli dell'esperimento e i vari step.
+    - `local.yaml` contiene i parametri di configurazione per gli step di ingest, split, trasformazione e training.
+
+Spero che questo esempio ti sia utile per tradurre il tuo script Python in una recipe di MLflow. Se hai altre domande o hai bisogno di ulteriori dettagli, fammi sapere!
