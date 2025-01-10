@@ -1,0 +1,111 @@
+Ecco la traduzione dello script Python in una recipe di MLflow, con i vari step separati e i file `recipe.yaml` e `local.yaml` configurati come richiesto.
+
+### Step di Ingest
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    return data
+
+file_paths = ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+data = ingest_data(file_paths)
+```
+
+### Step di Split
+```python
+from sklearn.model_selection import train_test_split
+
+def split_data(data, target_col, split_ratios):
+    X = data.drop(columns=[target_col])
+    y = data[target_col]
+    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=1 - split_ratios[0], random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=split_ratios[2] / (split_ratios[1] + split_ratios[2]), random_state=42)
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+split_ratios = [0.80, 0.10, 0.10]
+target_col = "is_red"
+X_train, X_val, X_test, y_train, y_val, y_test = split_data(data, target_col, split_ratios)
+```
+
+### Step di Trasformazione
+```python
+def transform_data(data):
+    data = data.dropna()
+    return data
+
+X_train = transform_data(X_train)
+X_val = transform_data(X_val)
+X_test = transform_data(X_test)
+```
+
+### Step di Training
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+
+model = train_model(X_train, y_train)
+```
+
+### Step di Valutazione
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    return f1, precision, recall
+
+f1, precision, recall = evaluate_model(model, X_test, y_test)
+print("F1 Score:", f1)
+print("Precision Score:", precision)
+print("Recall Score:", recall)
+```
+
+### File `recipe.yaml`
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_PARAMS}}
+  train: {}
+  evaluate: {}
+  register:
+    allow_non_validated_model: false
+```
+
+### File `local.yaml`
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest_data
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS: {}
+```
+
+Questi file e script dovrebbero aiutarti a tradurre lo script Python in una recipe di MLflow, con i vari step separati e configurati correttamente. Se hai altre domande o hai bisogno di ulteriori dettagli, fammi sapere!

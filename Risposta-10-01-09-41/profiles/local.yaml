@@ -1,0 +1,8 @@
+# Parametri di split dei dati (usati nello script)
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Parametri aggiuntivi per il modello RandomForest (se necessario)
+# ...
+
+# Parametri per la predizione (se presente nello script)
+# ...

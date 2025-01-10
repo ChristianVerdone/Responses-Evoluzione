@@ -1,0 +1,34 @@
+name: "{{ nomedellarecipe }}" # Sostituisci con "wine_classification"
+
+# Step di ingest
+ingest:
+  name: ingest_data  # Nome dello step
+  # (nessuna configurazione specifica in questo caso)
+
+# Step di trasformazione
+transform:
+  name: transform_data  # Nome dello step
+  # (nessuna configurazione specifica in questo caso)
+
+# Step di training
+train:
+  name: train_model  # Nome dello step
+  estimator_method: train_model  # Funzione che crea il modello
+  # Parametri aggiuntivi per il modello (se necessario)
+
+# Step di valutazione
+validation:
+  allow_non_validated_model: false  # Default: non registrare modelli non validi
+  thresholds:  # Soglie per le metriche di valutazione
+    f1_score: 0.7  # Esempio, personalizza i valori
+    precision_score: 0.6
+    recall_score: 0.7
+
+# Step di predizione (aggiungi se necessario)
+# ...
+
+# Dipendenze (richieste Jinja)
+# ...
+
+# Output (variabili da esporre da recipe.yaml)
+# ...

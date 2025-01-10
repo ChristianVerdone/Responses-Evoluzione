@@ -1,0 +1,24 @@
+recipe: "wine_quality_classification/v1"
+
+target_col: "is_red"
+
+primary_metric: "f1_score"
+
+steps:
+  ingest:
+    using: "python"
+    module: "ingest.py"
+    function: "ingest_data"
+    location:
+      - "{{DATA_PATH}}/winequality-white.csv"
+      - "{{DATA_PATH}}/winequality-red.csv"
+  split:
+    filter_threshold: {{FILTER_THRESHOLD|default(0.5)}}
+    filter_method: "filter_outliers"  # Sostituisci con la tua logica (opzionale)
+  transform:
+    using: "python"
+    module: "transform.py"
+    function: "transform_data"
+  train:
+    estimator_method: "train_model"
+    estimator_params: {}  # Puoi aggiungere parametri specifici se necessario

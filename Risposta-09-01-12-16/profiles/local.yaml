@@ -1,0 +1,20 @@
+INGEST_DATA_CONFIG:
+    using: "python ingest_data.py"
+    file_paths:
+        - "./data/winequality-white.csv"
+        - "./data/winequality-red.csv"
+
+TRANSFORM_DATA_CONFIG:
+    using: "python transform_data.py"
+
+TRAIN_MODEL_CONFIG:
+    using: "python train_model.py"
+
+EVALUATE_MODEL_CONFIG:
+    using: "python evaluate_model.py"
+
+# Define SPLIT_RATIOS if needed for data splitting (adjust values)
+SPLIT_RATIOS:
+    - 0.8  # Training set ratio
+    - 0.1  # Validation set ratio
+    - 0.1  # Test set ratio

@@ -1,0 +1,122 @@
+## Classificazione dello script e traduzione in recipe MLflow
+
+Analizzando lo script fornito, possiamo stabilire che si tratta di uno script di **classificazione**, poiché utilizza `RandomForestClassifier` e metriche come `f1_score`, `precision_score`, e `recall_score` tipiche di questo tipo di problemi.
+
+Ecco la traduzione dello script in una recipe MLflow con file separati e configurazione tramite Jinja:
+
+### 1. File Python (ingest.py):
+
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+  """Carica i dati dei vini bianco e rosso con il delimitatore corretto.
+
+  Args:
+      file_paths (list): Lista di percorsi ai file CSV.
+
+  Returns:
+      pandas.DataFrame: DataFrame contenente i dati uniti.
+  """
+  # Carica i dati dei vini bianco e rosso con delimitatore ';'
+  data_white = pd.read_csv(file_paths[0], delimiter=";")
+  data_red = pd.read_csv(file_paths[1], delimiter=";")
+
+  # Aggiungi la colonna is_red (0 per bianco, 1 per rosso)
+  data_white["is_red"] = 0
+  data_red["is_red"] = 1
+
+  # Unisci i due dataset
+  data = pd.concat([data_white, data_red], ignore_index=True)
+  return data
+```
+
+### 2. File Python (transform.py):
+
+```python
+import pandas as pd
+
+def transform_data(data):
+  """Esempio di trasformazioni personalizzate (sostituisci con la tua logica).
+
+  Args:
+      data (pandas.DataFrame): DataFrame contenente i dati.
+
+  Returns:
+      pandas.DataFrame: DataFrame con le trasformazioni applicate.
+  """
+  # Esempio di rimozione valori nulli
+  data = data.dropna()
+  return data
+```
+
+### 3. File Python (train.py):
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+  """Addestra un modello RandomForestClassifier.
+
+  Args:
+      X_train (pandas.DataFrame): Caratteristiche di training.
+      y_train (pandas.Series): Target di training.
+
+  Returns:
+      sklearn.ensemble.RandomForestClassifier: Modello addestrato.
+  """
+  model = RandomForestClassifier()
+  model.fit(X_train, y_train)
+  return model
+```
+
+### 4. File Python (evaluate.py):
+
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+def evaluate_model(model, X_test, y_test):
+  """Valuta il modello e restituisce le metriche di performance.
+
+  Args:
+      model (sklearn.ensemble.RandomForestClassifier): Modello addestrato.
+      X_test (pandas.DataFrame): Caratteristiche di test.
+      y_test (pandas.Series): Target di test.
+
+  Returns:
+      tuple: (float, float, float) - (F1-score, Precision, Recall)
+  """
+  y_pred = model.predict(X_test)
+  f1 = f1_score(y_test, y_pred)
+  precision = precision_score(y_test, y_pred)
+  recall = recall_score(y_test, y_pred)
+  return f1, precision, recall
+```
+
+### 5. File YAML della recipe (recipe.yaml):
+
+```yaml
+recipe: "wine_quality_classification/v1"
+
+target_col: "is_red"
+
+primary_metric: "f1_score"
+
+steps:
+  ingest:
+    using: "python"
+    module: "ingest.py"
+    function: "ingest_data"
+    location:
+      - "{{DATA_PATH}}/winequality-white.csv"
+      - "{{DATA_PATH}}/winequality-red.csv"
+  split:
+    filter_threshold: {{FILTER_THRESHOLD|default(0.5)}}
+    filter_method: "filter_outliers"  # Sostituisci con la tua logica (opzionale)
+  transform:
+    using: "python"
+    module: "transform.py"
+    function: "transform_data"
+  train:
+    estimator_method: "train_model"
+    estimator_params: {}  # Puoi aggiungere parametri specifici se necessario
