@@ -1,0 +1,89 @@
+Ho tradotto lo script Python fornito in una recipe di MLflow, separando gli script per i vari step e creando i file `recipe.yaml` e `local.yaml` come indicato. Ecco i file creati:
+
+### File `recipe.yaml`
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest:
+    using: csv
+    location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+    loader_method: ingest_data
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform:
+    transform_params: {{TRANSFORM_PARAMS|default({})}}
+  train:
+    estimator_params: {{ESTIMATOR_PARAMS|default({})}}
+  evaluate:
+    validation_thresholds:
+      f1_score: 0.7
+      precision_score: 0.7
+      recall_score: 0.7
+allow_non_validated_model: false
+```
+
+### File `local.yaml`
+```yaml
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+TRANSFORM_PARAMS:
+  method: "StandardScaler"
+  params: {}
+ESTIMATOR_PARAMS:
+  loss: "hinge"
+  penalty: "l2"
+  max_iter: 1000
+  tol: 1e-3
+```
+
+### Script separati per i vari step
+
+#### Step di Ingestione (`ingest.py`)
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    return data
+```
+
+#### Step di Trasformazione (`transform.py`)
+```python
+def transform_data(data):
+    data = data.dropna()
+    return data
+```
+
+#### Step di Training (`train.py`)
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+```
+
+#### Step di Valutazione (`evaluate.py`)
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    return f1, precision, recall
+```
+
+Puoi scaricare i file `recipe.yaml` e `local.yaml` dai seguenti link:
+- [recipe.yaml](blob:https://outlook.office.com/cfef162b-5f53-4a01-838a-83020b4f4ce2)
+- [local.yaml](blob:https://outlook.office.com/96fc1101-89ed-46f8-bcf4-dcfa3d9bba97)
+
+Se hai bisogno di ulteriori dettagli o chiarimenti, fammi sapere!

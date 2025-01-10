@@ -1,0 +1,89 @@
+## Classificazione dello Script e Creazione dei File MLflow
+
+**Analisi dello Script:**
+
+Lo script fornito esegue un'attività di classificazione binaria utilizzando un modello Random Forest. Classifica i vini bianchi e rossi in base alla colonna "is_red".
+
+**Creazione dei File MLflow**
+
+**1. local.yaml:**
+
+```yaml
+# Parametri di Split (modifica questi valori in base alle tue esigenze)
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Parametri di valutazione (potresti aggiungerne altri)
+EVALUATION_METRICS:
+  f1_score: {}
+  precision_score: {}
+  recall_score: {}
+
+# Altri parametri (aggiungi se necessario)
+# ...
+```
+
+**2. recipe.yaml:**
+
+```yaml
+name: "sklearn_wine_classification"  # Nome della recipe
+
+steps:
+  - name: ingest_data
+    using: "python_function"
+    function: "ingest_data"
+    artifact_location: "{{}}"  # Non ci sono output da registrare
+
+  - name: transform_data
+    using: "python_function"
+    function: "transform_data"
+    artifact_location: "{{}}"  # Non ci sono output da registrare
+
+  - name: split_data
+    using: "split"  # Utilizziamo lo split predefinito di MLflow
+    ratios: "{{SPLIT_RATIOS}}"
+
+  - name: train_model
+    using: "python_function"
+    function: "train_model"
+    artifact_location: "model"  # Registra il modello addestrato
+
+  - name: evaluate_model
+    using: "python_function"
+    function: "evaluate_model"
+    artifact_location: "{{}}"  # Non ci sono output da registrare
+    params:
+      model_reference: "{{ previous_step.output_artifacts.model }}"  # Passa il modello addestrato
+
+  - name: log_metrics
+    using: "python_function"
+    function: __builtin__.print  # Utilizziamo la funzione print per visualizzare le metriche
+    code: |
+      import mlflow
+      print("F1 Score:", mlflow.get_metric_value("f1_score"))
+      print("Precision Score:", mlflow.get_metric_value("precision_score"))
+      print("Recall Score:", mlflow.get_metric_value("recall_score"))
+
+# Parametri di valutazione (riferenziati da evaluate_model)
+evaluation:
+  metrics: "{{EVALUATION_METRICS}}"
+
+# Step di valutazione finale (visualizza le metriche con print)
+final_step: "log_metrics"
+```
+
+**Note:**
+
+* Il file `local.yaml` contiene i parametri di split e valutazione.
+* Il file `recipe.yaml` definisce la pipeline con step per ingestione, trasformazione, split, training, valutazione e logging delle metriche.
+* Vengono utilizzate funzioni Python definite nello script originale per la maggior parte degli step.
+* Lo step di split utilizza lo split predefinito di MLflow, che richiede i rapporti definiti in `SPLIT_RATIOS`.
+* Lo step di valutazione (`evaluate_model`) riceve il modello addestrato dallo step precedente come riferimento.
+* Lo step finale (`log_metrics`) utilizza la funzione `print` integrata per visualizzare le metriche recuperate da MLflow.
+* Puoi aggiungere altri parametri di valutazione modificando il file `local.yaml`.
+
+**Eseguire la Recipe:**
+
+1. Salva i file `local.yaml` e `recipe.yaml` nella tua directory di lavoro MLflow.
+2. Ejecuta el comando `mlflow run .` para ejecutar la recipe.
+
+Questo eseguirà la pipeline di classificazione, addestrerà il modello e registrerà le metriche. Potrai visualizzare le metriche finali nell'output del comando.

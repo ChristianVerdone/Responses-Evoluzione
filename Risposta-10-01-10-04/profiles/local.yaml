@@ -1,0 +1,11 @@
+# Parametri di Split (modifica questi valori in base alle tue esigenze)
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Parametri di valutazione (potresti aggiungerne altri)
+EVALUATION_METRICS:
+  f1_score: {}
+  precision_score: {}
+  recall_score: {}
+
+# Altri parametri (aggiungi se necessario)
+# ...

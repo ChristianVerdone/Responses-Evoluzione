@@ -1,0 +1,10 @@
+recipe: "wine_classification_experiment/v1"  # Adjust "wine_classification_experiment" based on your experiment name
+target_col: "is_red"
+primary_metric: "f1_score"  # Since it's a classification task
+validation_thresholds:  # Add thresholds for relevant metrics if needed
+    # f1_score: 0.8  # Example threshold
+allow_non_validated_model: false
+ingest_data: "{{ INGEST_DATA_CONFIG }}"
+transform_data: "{{ TRANSFORM_DATA_CONFIG }}"
+train_model: "{{ TRAIN_MODEL_CONFIG }}"
+evaluate_model: "{{ EVALUATE_MODEL_CONFIG }}"

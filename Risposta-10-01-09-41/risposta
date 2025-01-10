@@ -1,0 +1,74 @@
+## Classificazione dello script e creazione dei file recipe.yaml e local.yaml
+
+Lo script fornito esegue una **classificazione** usando un modello Random Forest per distinguere vini bianchi da rossi. Di seguito, la traduzione in una recipe MLflow con i file `recipe.yaml` e `local.yaml`:
+
+**1. recipe.yaml**
+
+```yaml
+name: "{{ nomedellarecipe }}" # Sostituisci con "wine_classification"
+
+# Step di ingest
+ingest:
+  name: ingest_data  # Nome dello step
+  # (nessuna configurazione specifica in questo caso)
+
+# Step di trasformazione
+transform:
+  name: transform_data  # Nome dello step
+  # (nessuna configurazione specifica in questo caso)
+
+# Step di training
+train:
+  name: train_model  # Nome dello step
+  estimator_method: train_model  # Funzione che crea il modello
+  # Parametri aggiuntivi per il modello (se necessario)
+
+# Step di valutazione
+validation:
+  allow_non_validated_model: false  # Default: non registrare modelli non validi
+  thresholds:  # Soglie per le metriche di valutazione
+    f1_score: 0.7  # Esempio, personalizza i valori
+    precision_score: 0.6
+    recall_score: 0.7
+
+# Step di predizione (aggiungi se necessario)
+# ...
+
+# Dipendenze (richieste Jinja)
+# ...
+
+# Output (variabili da esporre da recipe.yaml)
+# ...
+```
+
+**2. local.yaml**
+
+```yaml
+# Parametri di split dei dati (usati nello script)
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Parametri aggiuntivi per il modello RandomForest (se necessario)
+# ...
+
+# Parametri per la predizione (se presente nello script)
+# ...
+```
+
+**3. Spiegazione:**
+
+* `nomedellarecipe`: Sostituisci con "wine_classification" o un nome personalizzato per la tua recipe.
+* **Step di ingest e trasformazione**: Non ci sono configurazioni specifiche in questo script, quindi i file `recipe.yaml` e `local.yaml` non richiedono configurazioni aggiuntive per questi step.
+* **Step di training**:
+    * `estimator_method`: Indica la funzione `train_model` che crea il modello Random Forest.
+    * Puoi aggiungere parametri aggiuntivi per il modello Random Forest in `local.yaml` se necessario (es. `n_estimators`, `max_depth`).
+* **Step di valutazione**:
+    * `allow_non_validated_model`: Impostato su `false` per impostazione predefinita, evitando la registrazione di modelli che non superano le soglie di valutazione.
+    * `thresholds`: Definisci le soglie per le metriche di valutazione (`f1_score`, `precision_score`, `recall_score`). Regola i valori in base alle tue necessità.
+* **Step di predizione**: Aggiungi questa sezione se il tuo script include la predizione su nuovi dati.
+* **Dipendenze**: Aggiungi la dipendenza per Jinja (`pip install Jinja2`) se non è già presente.
+* **Output**: Definisci le variabili che vuoi esporre da `recipe.yaml` se necessario (ad esempio, le metriche di valutazione finali).
+
+**Note:**
+
+* Questo è un esempio di base. Puoi personalizzare ulteriormente i file `recipe.yaml` e `local.yaml` in base alle tue esigenze.
+* Ricorda di installare `mlflow` e le librerie usate nello script (`pandas`, `scikit-learn` in questo caso).
