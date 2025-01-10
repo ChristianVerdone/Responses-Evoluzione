@@ -1,0 +1,24 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+
+TRANSFORM_CONFIG:
+  params:
+    remove_nulls: true
+
+TRAIN_CONFIG:
+  estimator_params:
+    model_type: "RandomForest"
+
+VALIDATION_THRESHOLDS:
+  f1_score: 0.80
+  precision_score: 0.75
+  recall_score: 0.70
+
+ALLOW_NON_VALIDATED_MODEL: false
+

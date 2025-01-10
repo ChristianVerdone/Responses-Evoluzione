@@ -1,0 +1,18 @@
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+validation_thresholds:
+  f1_score: {{VALIDATION_THRESHOLDS.f1_score|default(0.80)}}
+  precision_score: {{VALIDATION_THRESHOLDS.precision_score|default(0.75)}}
+  recall_score: {{VALIDATION_THRESHOLDS.recall_score|default(0.70)}}
+
+allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL|default(false)}}
+
+steps:
+  ingest: {{INGEST_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate: default
+  register: default
+

@@ -1,0 +1,23 @@
+name: my_mlflow_project
+conda_env: conda.yaml
+entry_points:
+  ingest:
+    parameters:
+      file_paths: {type: list, default: ["./data/winequality-white.csv", "./data/winequality-red.csv"]}
+    command: "python ingest.py"
+  split:
+    parameters:
+      data_path: {type: string, default: "./data/ingested_data.csv"}
+    command: "python split.py"
+  transform:
+    parameters:
+      data_path: {type: string, default: "./data/X_train.csv"}
+    command: "python transform.py"
+  train:
+    parameters:
+      data_path: {type: string, default: "./data/X_train_transformed.csv"}
+    command: "python train.py"
+  evaluate:
+    parameters:
+      data_path: {type: string, default: "./data/X_test_transformed.csv"}
+    command: "python evaluate.py"
