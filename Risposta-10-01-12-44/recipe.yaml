@@ -1,0 +1,30 @@
+recipe: "wine_classifier/v1"
+
+target_col: "is_red"
+
+primary_metric: "f1_score" # metrica di riferimento, si può cambiare
+
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+
+steps:
+  ingest:
+    using: csv
+    location: {{INGEST_FILE_PATHS}}
+    loader_method: ingest.load_and_process_data # Riferimento alla funzione in ingest.py
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform:
+    transformer_fn: transform.get_transformer
+  train:
+    estimator_method: train.get_estimator
+  evaluate:
+    validation_criteria:
+      - metric: f1_score
+        threshold: 0.5 # Imposta una soglia, da modificare dopo l'analisi
+      - metric: precision_score
+        threshold: 0.5 # Imposta una soglia, da modificare dopo l'analisi
+      - metric: recall_score
+        threshold: 0.5 # Imposta una soglia, da modificare dopo l'analisi
+    allow_non_validated_model: true

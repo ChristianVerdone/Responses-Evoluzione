@@ -1,0 +1,12 @@
+INGEST_FILE_PATHS:
+  - "./data/winequality-white.csv"
+  - "./data/winequality-red.csv"
+
+SPLIT_RATIOS: [0.8, 0.1, 0.1]
+
+# Imposta le soglie dopo aver eseguito la recipe e aver valutato le metriche
+# Esempio:
+# THRESHOLDS:
+#   f1_score: 0.85
+#   precision_score: 0.75
+#   recall_score: 0.9
