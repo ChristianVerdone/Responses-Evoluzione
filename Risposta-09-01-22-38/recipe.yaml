@@ -1,0 +1,16 @@
+recipe: "classification/v1"
+target_col: "is_red"
+steps:
+  ingest:
+    ingest_scoring: {{INGEST_SCORING_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+  transform:
+    transform_params: {{TRANSFORM_PARAMS|default({})}}
+  train:
+    train_params: {{TRAIN_PARAMS|default({})}}
+  evaluate:
+    thresholds: {{EVALUATION_THRESHOLDS}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL|default(false)}}
+  predict:
+    prediction_config: {{PREDICTION_CONFIG}}

@@ -1,0 +1,31 @@
+# Configurazioni di ingestione
+INGEST_CONFIG:
+  location:
+    - "./data/winequality-white.csv"
+    - "./data/winequality-red.csv"
+  format: "csv"
+
+# Configurazioni di split
+SPLIT_CONFIG:
+  split_ratios: [0.8, 0.1, 0.1]
+
+# Configurazioni di trasformazione
+TRANSFORM_CONFIG:
+  drop_nulls: true
+
+# Parametri di training
+TRAIN_PARAMS:
+  model_type: "RandomForestClassifier"
+  model_params:
+    n_estimators: 100
+    max_depth: None
+    random_state: 42
+
+# Soglie di validazione
+VALIDATION_THRESHOLDS:
+  f1_score: 0.85
+  precision_score: 0.8
+  recall_score: 0.75
+
+# Permessi di registrazione
+ALLOW_NON_VALIDATED_MODEL: false

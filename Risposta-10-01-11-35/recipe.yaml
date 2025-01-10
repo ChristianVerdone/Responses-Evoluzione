@@ -1,0 +1,20 @@
+# recipe.yaml
+recipe: "classification/v1"
+target_col: "is_red"
+primary_metric: "f1_score"
+
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_CONFIG}}
+  train:
+    using: custom
+    estimator_method: train_estimator
+  evaluate:
+    validation_criteria:
+      threshold:
+        f1_score: 0.8
+        precision: 0.75
+        recall: 0.75
+    allow_non_validated_model: false
