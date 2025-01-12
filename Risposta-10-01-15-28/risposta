@@ -1,0 +1,121 @@
+Certo, posso aiutarti a tradurre lo script Python che hai fornito in una recipe MLflow. Ecco i file necessari per la recipe, separati per step e con i file `recipe.yaml` e `local.yaml` configurati come richiesto:
+
+**`recipe.yaml`**
+
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform:
+    transformer_method: transform_data
+  train:
+    estimator_method: train_model
+  evaluate:
+    validation_thresholds:
+      f1_score: 0.9
+      precision_score: 0.9
+      recall_score: 0.9
+    allow_non_validated_model: False 
+```
+
+**`local.yaml`**
+
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db" 
+  artifact_location: "/metadata/mlflow/mlartifacts" 
+
+model_registry:
+  model_name: "wine_classifier" 
+
+INGEST_CONFIG:
+  file_paths: ["./data/winequality-white.csv", "./data/winequality-red.csv"] 
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+```
+
+**`ingest.py`**
+
+```python
+import pandas as pd
+
+def ingest_data(file_paths):
+    """
+    Carica i dati dei vini bianco e rosso con il delimitatore corretto.
+
+    Args:
+      file_paths (list): Lista dei percorsi dei file CSV.
+
+    Returns:
+      pandas.DataFrame: DataFrame contenente i dati aggregati.
+    """
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+    data = pd.concat(, ignore_index=True)
+    return data
+```
+
+**`transform.py`**
+
+```python
+def transform_data(data):
+    """
+    Esegue la trasformazione dei dati.
+
+    Args:
+      data (pandas.DataFrame): DataFrame contenente i dati da trasformare.
+
+    Returns:
+      pandas.DataFrame: DataFrame contenente i dati trasformati.
+    """
+    data = data.dropna()
+    return data
+```
+
+**`train.py`**
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+def train_model(X_train, y_train):
+    """
+    Addestra il modello di classificazione Random Forest.
+
+    Args:
+      X_train (pandas.DataFrame): DataFrame contenente le feature di training.
+      y_train (pandas.Series): Series contenente le etichette di training.
+
+    Returns:
+      sklearn.ensemble.RandomForestClassifier: Modello addestrato.
+    """
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    return model
+```
+
+**Spiegazione della traduzione:**
+
+* Ho creato i file separati `ingest.py`, `transform.py` e `train.py` per ogni step della recipe.
+* Ho spostato le funzioni `ingest_data`, `transform_data` e `train_model` nei rispettivi file.
+* Ho creato i file `recipe.yaml` e `local.yaml` con i parametri e le configurazioni estratti dallo script Python.
+* Ho impostato `nomedellarecipe` su "classification" in `recipe.yaml` poiché lo script utilizza un classificatore.
+* Ho definito le soglie di validazione in `recipe.yaml` con valori di esempio (0.9 per f1_score, precision_score e recall_score). Dovrai aggiornare questi valori in base alle tue esigenze.
+* Ho impostato `allow_non_validated_model` su `False` in `recipe.yaml` poiché lo script non gestisce la registrazione di modelli non validati.
+* Ho incluso i percorsi dei file di dati in `INGEST_CONFIG` in `local.yaml`.
+* Ho mantenuto il tracking URI e il nome dell'esperimento in `local.yaml` come specificato nello script originale.
+
+**Note:**
+
+* Questo esempio non include gli step `evaluate`, `register`, `ingest_scoring` e `predict` poiché non sono presenti nello script Python originale. Se hai bisogno di questi step, dovrai aggiungerli alla recipe e creare i file Python corrispondenti.
+* Assicurati di installare le dipendenze necessarie, inclusi `mlflow`, `pandas` e `scikit-learn`.
+* Puoi personalizzare ulteriormente la recipe e i file di configurazione in base alle tue esigenze specifiche.
+
+Spero che questa traduzione ti sia utile per iniziare a utilizzare MLflow Recipes!
