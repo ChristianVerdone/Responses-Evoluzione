@@ -1,0 +1,21 @@
+name: sklearn_classification_recipe
+
+steps:
+  ingest:
+    command: python ingest.py
+    params:
+      file_paths: ["{{FILE_PATHS}}"]
+
+  split:
+    command: python split.py
+    params:
+      split_ratios: {{SPLIT_RATIOS|default([0.80, 0.10, 0.10])}}
+
+  transform:
+    command: python transform.py
+
+  train:
+    command: python train.py
+
+  evaluate:
+    command: python evaluate.py

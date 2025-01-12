@@ -1,0 +1,19 @@
+INGEST_CONFIG:
+  file_paths:
+    - "./data/winequality-white.csv"
+    - "./data/winequality-red.csv"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS: {}
+
+TRAIN_PARAMS:
+  model_type: "RandomForest"
+  random_state: 42
+
+VALIDATION_THRESHOLDS:
+  f1_score: 0.85
+  precision_score: 0.80
+  recall_score: 0.75
+
+ALLOW_NON_VALIDATED_MODEL: false

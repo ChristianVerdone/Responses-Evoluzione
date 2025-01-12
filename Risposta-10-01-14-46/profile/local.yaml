@@ -1,0 +1,2 @@
+FILE_PATHS: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+SPLIT_RATIOS: [0.80, 0.10, 0.10]

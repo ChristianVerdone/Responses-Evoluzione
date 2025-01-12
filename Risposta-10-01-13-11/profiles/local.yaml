@@ -1,0 +1,34 @@
+### File: local.yaml
+
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "classification_model"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: "ingest_data"
+
+SPLIT_CONFIG:
+  split_ratios: [0.8, 0.1, 0.1]
+
+TRANSFORM_CONFIG:
+  transformer_method: "transform_data"
+  transform_params: {}
+
+TRAIN_CONFIG:
+  algorithm: "RandomForest"
+  hyperparameters:
+    n_estimators: 100
+    max_depth: None
+
+VALIDATION_THRESHOLDS:
+  f1_score: 0.85
+  precision_score: 0.80
+  recall_score: 0.75
+
+ALLOW_NON_VALIDATED_MODEL: false
