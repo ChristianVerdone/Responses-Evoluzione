@@ -1,0 +1,17 @@
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform:
+    transform_params: {{TRANSFORM_PARAMS}}
+  train:
+    estimator_params: {{ESTIMATOR_PARAMS}}
+  evaluate:
+    thresholds: {{EVALUATION_THRESHOLDS}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL}}
+  ingest_scoring: {{INGEST_SCORING_CONFIG}}
+  predict: {{PREDICTION_CONFIG}}

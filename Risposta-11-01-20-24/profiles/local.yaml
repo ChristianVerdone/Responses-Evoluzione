@@ -1,0 +1,26 @@
+# local.yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "./metadata/mlflow/mlartifacts"
+
+INGEST_CONFIG:
+  using: custom
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest.run
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_CONFIG:
+  using: custom
+  transformer_fn: transform.transformer_fn
+
+ESTIMATOR_PARAMS:
+  # Parametri del RandomForestClassifier possono essere configurati qui
+
+METRICS_THRESHOLD:
+  f1_score: 0.8
+  precision_score: 0.8
+  recall_score: 0.8
+
+ALLOW_NON_VALIDATED: false

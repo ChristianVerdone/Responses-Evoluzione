@@ -1,0 +1,19 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "metadata/mlflow/mlartifacts"
+
+INGEST_LOCATION: 
+  - "./data/winequality-white.csv"
+  - "./data/winequality-red.csv"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS:
+  drop_na: true
+
+F1_THRESHOLD: 0.8
+PRECISION_THRESHOLD: 0.8
+RECALL_THRESHOLD: 0.8
+
+ALLOW_NON_VALIDATED: false

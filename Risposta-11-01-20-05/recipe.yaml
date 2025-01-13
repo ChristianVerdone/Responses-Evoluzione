@@ -1,0 +1,23 @@
+recipe: "classification/v1"
+target_col: "is_red"
+primary_metric: "f1_score"
+steps:
+  ingest: 
+    using: csv
+    location: {{INGEST_LOCATION}}
+    loader_method: custom
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_PARAMS}}
+  train:
+    using: custom
+    estimator_method: custom
+  evaluate:
+    validation_criteria:
+      - metric: f1_score
+        threshold: {{F1_THRESHOLD}}
+      - metric: precision_score
+        threshold: {{PRECISION_THRESHOLD}}
+      - metric: recall_score
+        threshold: {{RECALL_THRESHOLD}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED|default(false)}}
