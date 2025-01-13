@@ -1,0 +1,20 @@
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS|default([0.75, 0.125, 0.125])}}
+  transform:
+    using: {{TRANSFORM_CONFIG.using}}
+    transformer_method: {{TRANSFORM_CONFIG.transformer_method}}
+    transform_params: {{TRANSFORM_PARAMS|default({})}}
+  train:
+    using: {{TRAIN_CONFIG.using}}
+    estimator_method: {{TRAIN_CONFIG.estimator_method}}
+    validation_thresholds: {{VALIDATION_THRESHOLDS}}
+  evaluate:
+    validation_thresholds: {{VALIDATION_THRESHOLDS}}
+  register:
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL|default(false)}}
