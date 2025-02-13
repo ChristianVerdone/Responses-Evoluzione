@@ -1,0 +1,249 @@
+Ecco la traduzione dello script Python in una recipe MLflow, suddivisa in file separati per ogni step e con i file `recipe.yaml` e `local.yaml` configurati correttamente.
+
+---
+
+### Struttura del Progetto
+```
+project/
+├── steps/
+│   ├── ingest.py
+│   ├── split.py
+│   ├── transform.py
+│   ├── train.py
+│   └── evaluate.py
+├── recipe.yaml
+└── local.yaml
+```
+
+---
+
+### File `recipe.yaml`
+```yaml
+recipe: "wine_classification/v1"  # Classificazione binaria (target "is_red")
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate:
+    validation_thresholds:
+      f1_score: {{F1_THRESHOLD}}
+      precision_score: {{PRECISION_THRESHOLD}}
+      recall_score: {{RECALL_THRESHOLD}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL}}
+```
+
+---
+
+### File `local.yaml`
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  delimiter: ";"  # Specifica il delimitatore usato nei CSV
+  loader_method: "load_data"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS:
+  drop_na: true  # Rimozione valori nulli
+
+TRAIN_PARAMS:
+  estimator: "RandomForestClassifier"
+  random_state: 42
+
+# Soglie di validazione (esempio)
+F1_THRESHOLD: 0.8
+PRECISION_THRESHOLD: 0.75
+RECALL_THRESHOLD: 0.7
+ALLOW_NON_VALIDATED_MODEL: false
+```
+
+---
+
+### Script per i Vari Step
+
+#### **`steps/ingest.py`**
+```python
+import pandas as pd
+import logging
+from typing import List
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def load_data(file_paths: List[str], delimiter: str = ";") -> pd.DataFrame:
+    """
+    Carica e unisce i dataset dei vini bianchi e rossi.
+    """
+    try:
+        data_white = pd.read_csv(file_paths[0], delimiter=delimiter)
+        data_red = pd.read_csv(file_paths[1], delimiter=delimiter)
+
+        data_white["is_red"] = 0
+        data_red["is_red"] = 1
+
+        data = pd.concat([data_white, data_red], ignore_index=True)
+        logger.info("Dataset caricato correttamente.")
+        return data
+    except Exception as e:
+        logger.error(f"Errore durante l'ingestione: {e}")
+        raise
+```
+
+---
+
+#### **`steps/split.py`**
+```python
+import pandas as pd
+import logging
+from typing import Dict, List
+from sklearn.model_selection import train_test_split
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def split_data(data: pd.DataFrame, split_ratios: List[float]) -> Dict[str, pd.DataFrame]:
+    """
+    Divide il dataset in training, validation e test set.
+    """
+    try:
+        X = data.drop(columns=["is_red"])
+        y = data["is_red"]
+
+        X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=1 - split_ratios[0], random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_temp, y_temp,
+            test_size=split_ratios[2] / (split_ratios[1] + split_ratios[2]),
+            random_state=42
+        )
+
+        logger.info("Split completato.")
+        return {
+            "X_train": X_train, "y_train": y_train,
+            "X_val": X_val, "y_val": y_val,
+            "X_test": X_test, "y_test": y_test
+        }
+    except Exception as e:
+        logger.error(f"Errore durante lo split: {e}")
+        raise
+```
+
+---
+
+#### **`steps/transform.py`**
+```python
+import pandas as pd
+import logging
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def transformer_fn():
+    """
+    Definisce la pipeline di trasformazione (rimozione valori nulli).
+    """
+    try:
+        preprocessor = ColumnTransformer(
+            transformers=[("drop_na", "passthrough", [])],  # Placeholder per operazioni future
+            remainder="passthrough"
+        )
+        logger.info("Trasformatore definito.")
+        return preprocessor
+    except Exception as e:
+        logger.error(f"Errore nella trasformazione: {e}")
+        raise
+```
+
+---
+
+#### **`steps/train.py`**
+```python
+import logging
+from sklearn.ensemble import RandomForestClassifier
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def estimator_fn(estimator_params: dict = None):
+    """
+    Definisce lo stimatore RandomForest.
+    """
+    try:
+        if estimator_params is None:
+            estimator_params = {}
+
+        model = RandomForestClassifier(**estimator_params)
+        logger.info("Modello inizializzato.")
+        return model
+    except Exception as e:
+        logger.error(f"Errore durante il training: {e}")
+        raise
+```
+
+---
+
+#### **`steps/evaluate.py`**
+```python
+import logging
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def evaluate_fn(model, X_test, y_test):
+    """
+    Valuta il modello e restituisce le metriche.
+    """
+    try:
+        y_pred = model.predict(X_test)
+        return {
+            "f1_score": f1_score(y_test, y_pred),
+            "precision_score": precision_score(y_test, y_pred),
+            "recall_score": recall_score(y_test, y_pred)
+        }
+    except Exception as e:
+        logger.error(f"Errore nella valutazione: {e}")
+        raise
+```
+
+---
+
+### Note Importanti
+1. **Tipo di Recipe (Classification vs Regression):**
+   Poiché il target `is_red` è binario (0/1), la recipe è di tipo **classification**.
+
+2. **Jinja2 e YAML:**
+   I placeholder come `{{INGEST_CONFIG}}` nel `recipe.yaml` si riferiscono alle variabili definite nel `local.yaml`.
+
+3. **Parametri di Validazione:**
+   Le soglie (`F1_THRESHOLD`, `PRECISION_THRESHOLD`, `RECALL_THRESHOLD`) e il flag `allow_non_validated_model` sono configurabili in `local.yaml`.
+
+4. **Dipendenza del Delimitatore:**
+   Il delimitatore `;` nei file CSV è specificato in `local.yaml` sotto `INGEST_CONFIG.delimiter`.
+
+5. **Log del Modello:**
+   MLflow registrerà automaticamente il modello durante lo step di training se si utilizza `mlflow.sklearn.autolog()`.
+
+---
+
+### Esecuzione della Recipe
+Per eseguire la recipe, usa il comando:
+```bash
+mlflow recipes run --recipe wine_classification
+```
+
+Questa struttura garantisce tracciabilità, modularità e riproducibilità del flusso di lavoro di machine learning! 😊

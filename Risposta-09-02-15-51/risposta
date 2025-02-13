@@ -1,0 +1,210 @@
+Ecco la traduzione dello script Python in una recipe MLflow, suddivisa in step separati e con i file `recipe.yaml` e `local.yaml` configurati correttamente. Il modello è una **classification** (viene utilizzato `RandomForestClassifier` per prevedere la classe binaria `is_red`).
+
+---
+
+### Struttura della Recipe MLflow
+
+```
+📁 wine_classification_recipe/
+├── 📄 ingest.py
+├── 📄 split.py
+├── 📄 transform.py
+├── 📄 train.py
+├── 📄 evaluate.py
+├── 📄 recipe.yaml
+├── 📄 local.yaml
+```
+
+---
+
+### 1. File `ingest.py`
+
+```python
+import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def load_data(file_paths):
+    """
+    Carica e unisce i dataset dei vini bianchi e rossi.
+    """
+    try:
+        logger.info("Caricamento dati...")
+        data_white = pd.read_csv(file_paths[0], delimiter=';')
+        data_red = pd.read_csv(file_paths[1], delimiter=';')
+
+        data_white["is_red"] = 0
+        data_red["is_red"] = 1
+
+        data = pd.concat([data_white, data_red], ignore_index=True)
+        logger.info("Dati caricati con successo.")
+        return data
+
+    except Exception as e:
+        logger.error(f"Errore durante l'ingestione: {e}")
+        raise
+```
+
+---
+
+### 2. File `split.py`
+
+```python
+from sklearn.model_selection import train_test_split
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def split_data(X, y, split_ratios):
+    """
+    Divide i dati in training, validation e test.
+    """
+    try:
+        logger.info("Divisione dei dati...")
+        X_train, X_temp, y_train, y_temp = train_test_split(
+            X, y, test_size=1 - split_ratios[0], random_state=42
+        )
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_temp, y_temp,
+            test_size=split_ratios[2] / (split_ratios[1] + split_ratios[2]),
+            random_state=42
+        )
+        logger.info("Dati divisi con successo.")
+        return X_train, X_val, X_test, y_train, y_val, y_test
+
+    except Exception as e:
+        logger.error(f"Errore durante lo split: {e}")
+        raise
+```
+
+---
+
+### 3. File `transform.py`
+
+```python
+import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def transformer_fn():
+    """
+    Definisce il trasformatore (esempio base: rimozione valori nulli).
+    """
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+
+    try:
+        logger.info("Creazione del trasformatore...")
+        preprocessor = ColumnTransformer(
+            transformers=[("drop_na", "drop", "any")]
+        )
+        logger.info("Trasformatore creato.")
+        return preprocessor
+
+    except Exception as e:
+        logger.error(f"Errore durante la trasformazione: {e}")
+        raise
+```
+
+---
+
+### 4. File `train.py`
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+import logging
+from typing import Dict, Any
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def estimator_fn(estimator_params: Dict[str, Any] = None):
+    """
+    Crea un classificatore RandomForest non addestrato.
+    """
+    try:
+        logger.info("Creazione del modello...")
+        if estimator_params is None:
+            estimator_params = {}
+
+        model = RandomForestClassifier(**estimator_params)
+        logger.info("Modello creato.")
+        return model
+
+    except Exception as e:
+        logger.error(f"Errore durante il training: {e}")
+        raise
+```
+
+---
+
+### 5. File `recipe.yaml`
+
+```yaml
+recipe: "wine_classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate:
+    validation_thresholds:
+      f1_score: 0.8
+      precision_score: 0.75
+      recall_score: 0.7
+    allow_non_validated_model: false
+```
+
+---
+
+### 6. File `local.yaml`
+
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: load_data
+
+SPLIT_CONFIG:
+  split_ratios: [0.80, 0.10, 0.10]
+
+TRANSFORM_CONFIG:
+  transformer_fn: transformer_fn
+
+TRAIN_CONFIG:
+  estimator_fn: estimator_fn
+  estimator_params:
+    n_estimators: 100
+    max_depth: 10
+    random_state: 42
+```
+
+---
+
+### Note Finali
+
+1. **Threshold di Validazione**: Le soglie (`f1_score: 0.8`, `precision_score: 0.75`, `recall_score: 0.7`) sono state inserite direttamente in `recipe.yaml`.
+2. **Permessi di Registrazione**: `allow_non_validated_model: false` blocca la registrazione di modelli non validati.
+3. **Configurazioni di Ingest**: Il percorso dei dati è definito in `local.yaml` sotto `INGEST_CONFIG`.
+4. **Tipo di Recipe**: `classification` (inferito dall'uso di `RandomForestClassifier` e dalla colonna target binaria `is_red`).
+
+Per eseguire la recipe, usa il comando MLflow:
+```bash
+mlflow recipes run --recipe wine_classification_recipe
+```

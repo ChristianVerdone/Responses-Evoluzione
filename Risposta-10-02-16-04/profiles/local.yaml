@@ -1,0 +1,22 @@
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: custom
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest_data
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_STEP:
+  transformer_method: transform_data
+
+F1_THRESHOLD: 0.7
+PRECISION_THRESHOLD: 0.65
+RECALL_THRESHOLD: 0.6
+ALLOW_NON_VALIDATED_MODEL: false

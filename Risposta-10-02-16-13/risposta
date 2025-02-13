@@ -1,0 +1,203 @@
+Ecco la traduzione dello script Python in una recipe MLflow, organizzata in file separati per ogni step e con i file `recipe.yaml` e `local.yaml` configurati correttamente. Dato che lo script utilizza un `RandomForestClassifier` e la colonna target `is_red` è binaria, la recipe sarà di tipo **classification**.
+
+---
+
+### File Structure
+```
+├── recipe.yaml
+├── local.yaml
+├── steps
+│   ├── ingest.py
+│   ├── split.py
+│   ├── transform.py
+│   ├── train.py
+│   └── evaluate.py
+```
+
+---
+
+### 1. **recipe.yaml**
+```yaml
+recipe: "wine_classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate:
+    validation_thresholds:
+      f1_score: {{F1_THRESHOLD}}
+      precision_score: {{PRECISION_THRESHOLD}}
+      recall_score: {{RECALL_THRESHOLD}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL}}
+```
+
+---
+
+### 2. **local.yaml**
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  delimiter: ";"  # Specifica il delimitatore dei file CSV
+  loader_method: "ingest_data"
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_PARAMS:
+  drop_na: true  # Abilita la rimozione di valori nulli
+
+TRAIN_CONFIG:
+  estimator_name: "RandomForestClassifier"
+  estimator_params: {}  # Parametri opzionali (es. n_estimators: 100)
+
+F1_THRESHOLD: 0.7
+PRECISION_THRESHOLD: 0.6
+RECALL_THRESHOLD: 0.5
+ALLOW_NON_VALIDATED_MODEL: false
+```
+
+---
+
+### 3. **steps/ingest.py**
+```python
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
+
+def ingest_data(location, delimiter=";"):
+    """
+    Carica e unisce i dataset dei vini bianchi e rossi.
+    """
+    data_white = pd.read_csv(location[0], delimiter=delimiter)
+    data_red = pd.read_csv(location[1], delimiter=delimiter)
+
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    logger.info("Dati caricati correttamente. Dimensioni: %s", data.shape)
+    return data
+```
+
+---
+
+### 4. **steps/split.py**
+```python
+from sklearn.model_selection import train_test_split
+import logging
+
+logger = logging.getLogger(__name__)
+
+def split_data(data, split_ratios):
+    """
+    Divide il dataset in training, validation e test.
+    """
+    X = data.drop(columns=["is_red"])
+    y = data["is_red"]
+
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X, y, test_size=1 - split_ratios[0], random_state=42
+    )
+
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp,
+        test_size=split_ratios[2] / (split_ratios[1] + split_ratios[2]),
+        random_state=42
+    )
+
+    logger.info("Split completato. Training: %s, Val: %s, Test: %s",
+                X_train.shape, X_val.shape, X_test.shape)
+    return X_train, X_val, X_test, y_train, y_val, y_test
+```
+
+---
+
+### 5. **steps/transform.py**
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def transform_data(data, drop_na=True):
+    """
+    Rimuove i valori nulli se richiesto.
+    """
+    if drop_na:
+        data = data.dropna()
+        logger.info("Valori nulli rimossi. Dimensioni: %s", data.shape)
+    return data
+```
+
+---
+
+### 6. **steps/train.py**
+```python
+from sklearn.ensemble import RandomForestClassifier
+import logging
+
+logger = logging.getLogger(__name__)
+
+def estimator_fn(estimator_params=None):
+    """
+    Definisce il classificatore RandomForest.
+    """
+    if estimator_params is None:
+        estimator_params = {}
+
+    estimator = RandomForestClassifier(**estimator_params)
+    logger.info("Modello inizializzato: %s", estimator)
+    return estimator
+```
+
+---
+
+### 7. **steps/evaluate.py**
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+import logging
+
+logger = logging.getLogger(__name__)
+
+def evaluate_model(model, X_test, y_test):
+    """
+    Calcola le metriche di valutazione.
+    """
+    y_pred = model.predict(X_test)
+
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+
+    logger.info("Metriche: F1=%.2f, Precision=%.2f, Recall=%.2f", f1, precision, recall)
+    return {"f1_score": f1, "precision_score": precision, "recall_score": recall}
+```
+
+---
+
+### Esecuzione della Recipe
+Per eseguire la recipe, utilizza il comando:
+```bash
+mlflow recipes run --recipe-dir .
+```
+
+---
+
+### Note Finali
+- **Jinja2**: I riferimenti come `{{INGEST_CONFIG}}` in `recipe.yaml` si basano sulle variabili definite in `local.yaml`.
+- **Dipendendenze**: Assicurati di includere `mlflow`, `pandas`, `scikit-learn` nel file `requirements.txt`.
+- **Logging**: Tutti gli step registrano automaticamente parametri e metriche in MLflow grazie alla configurazione del `tracking_uri`.
+
+Questa struttura garantisce modularità, riproducibilità e tracciamento completo del ciclo di vita del modello! 🚀

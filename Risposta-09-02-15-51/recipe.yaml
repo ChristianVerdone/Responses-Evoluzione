@@ -1,0 +1,15 @@
+recipe: "wine_classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate:
+    validation_thresholds:
+      f1_score: 0.8
+      precision_score: 0.75
+      recall_score: 0.7
+    allow_non_validated_model: false

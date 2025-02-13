@@ -1,0 +1,232 @@
+Ecco la traduzione dello script Python in una recipe MLflow, suddivisa in step separati e file di configurazione:
+
+### Struttura del Progetto
+```
+project/
+├── steps/
+│   ├── ingest.py
+│   ├── split.py
+│   ├── transform.py
+│   ├── train.py
+│   └── validate.py
+├── recipe.yaml
+├── local.yaml
+└── conda.yaml
+```
+
+### 1. File recipe.yaml
+```yaml
+recipe: "classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split:
+    split_ratios: {{SPLIT_RATIOS}}
+  transform: {{TRANSFORM_STEP}}
+  train:
+    estimator_name: "RandomForest"
+  validate:
+    thresholds:
+      f1_score: {{F1_THRESHOLD}}
+      precision_score: {{PRECISION_THRESHOLD}}
+      recall_score: {{RECALL_THRESHOLD}}
+    allow_non_validated_model: {{ALLOW_NON_VALIDATED_MODEL}}
+```
+
+### 2. File local.yaml
+```yaml
+experiment:
+  name: "sklearn_classification_experiment"
+  tracking_uri: "sqlite:///metadata/mlflow/mlruns.db"
+  artifact_location: "/metadata/mlflow/mlartifacts"
+
+model_registry:
+  model_name: "wine_classifier"
+
+INGEST_CONFIG:
+  using: custom
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  loader_method: ingest_data
+
+SPLIT_RATIOS: [0.80, 0.10, 0.10]
+
+TRANSFORM_STEP:
+  transformer_method: transform_data
+
+F1_THRESHOLD: 0.7
+PRECISION_THRESHOLD: 0.65
+RECALL_THRESHOLD: 0.6
+ALLOW_NON_VALIDATED_MODEL: false
+```
+
+### 3. File steps/ingest.py
+```python
+import pandas as pd
+import logging
+from mlflow.pyfunc import PythonModel
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def ingest_data(file_paths):
+    data_white = pd.read_csv(file_paths[0], delimiter=';')
+    data_red = pd.read_csv(file_paths[1], delimiter=';')
+
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    logger.info("Dati ingeriti con successo")
+    return data
+
+class IngestStep(PythonModel):
+    def __init__(self, config):
+        self.config = config
+
+    def predict(self, context, model_input):
+        return ingest_data(self.config['location'])
+```
+
+### 4. File steps/split.py
+```python
+from sklearn.model_selection import train_test_split
+import logging
+from mlflow.pyfunc import PythonModel
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class SplitStep(PythonModel):
+    def __init__(self, config):
+        self.config = config
+
+    def predict(self, context, model_input):
+        X = model_input.drop(columns=[self.config['target_col']])
+        y = model_input[self.config['target_col']]
+
+        ratios = self.config['split_ratios']
+        X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=1 - ratios[0], random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_temp, y_temp,
+            test_size=ratios[2]/(ratios[1] + ratios[2]),
+            random_state=42
+        )
+        logger.info("Split dati completato")
+        return (X_train, y_train), (X_val, y_val), (X_test, y_test)
+```
+
+### 5. File steps/transform.py
+```python
+import logging
+from mlflow.pyfunc import PythonModel
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def transform_data(data):
+    return data.dropna()
+
+class TransformStep(PythonModel):
+    def __init__(self, config):
+        self.config = config
+
+    def predict(self, context, model_input):
+        X_train, X_val, X_test = model_input
+        return (
+            transform_data(X_train),
+            transform_data(X_val),
+            transform_data(X_test)
+        )
+```
+
+### 6. File steps/train.py
+```python
+from sklearn.ensemble import RandomForestClassifier
+import mlflow
+import logging
+from mlflow.pyfunc import PythonModel
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class TrainStep(PythonModel):
+    def __init__(self, config):
+        self.config = config
+
+    def predict(self, context, model_input):
+        X_train, y_train = model_input
+        model = RandomForestClassifier()
+        model.fit(X_train, y_train)
+
+        mlflow.log_param("model_type", "RandomForest")
+        mlflow.sklearn.log_model(model, "model")
+        logger.info("Modello addestrato e registrato")
+        return model
+```
+
+### 7. File steps/validate.py
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+import logging
+from mlflow.pyfunc import PythonModel
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class ValidateStep(PythonModel):
+    def __init__(self, config):
+        self.config = config
+
+    def predict(self, context, model_input):
+        model, (X_test, y_test) = model_input
+        y_pred = model.predict(X_test)
+
+        metrics = {
+            "f1_score": f1_score(y_test, y_pred),
+            "precision_score": precision_score(y_test, y_pred),
+            "recall_score": recall_score(y_test, y_pred)
+        }
+
+        validation_status = all([
+            metrics["f1_score"] >= self.config['thresholds']['f1_score'],
+            metrics["precision_score"] >= self.config['thresholds']['precision_score'],
+            metrics["recall_score"] >= self.config['thresholds']['recall_score']
+        ])
+
+        if validation_status or self.config['allow_non_validated_model']:
+            logger.info("Modello validato con successo")
+        else:
+            logger.warning("Modello non soddisfa i criteri di validazione")
+
+        return metrics
+```
+
+### 8. File conda.yaml
+```yaml
+name: wine_classification
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pandas
+  - scikit-learn
+  - mlflow
+  - pip
+  - pip:
+    - jinja2
+```
+
+### Note importanti:
+1. Il tipo di recipe è "classification" come identificato dal Classifier
+2. Tutti i parametri configurabili sono estratti nel local.yaml
+3. La logica di valutazione include il controllo delle threshold
+4. La gestione MLflow è mantenuta nello step di training
+5. La pipeline può essere eseguita con:
+```bash
+mlflow recipes run --profile local
+```
+
+Questa struttura mantiene la separazione degli step, permette la configurazione tramite YAML, e mantiene la riproducibilità dell'esperimento originale.
