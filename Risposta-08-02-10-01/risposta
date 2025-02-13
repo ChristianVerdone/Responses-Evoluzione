@@ -1,0 +1,211 @@
+Ecco la traduzione dello script Python in una recipe MLflow, suddivisa in step separati e con i file di configurazione richiesti. Dato che il target `is_red` è binario (0/1), si tratta di una **classification recipe**.
+
+---
+
+### Struttura del Progetto
+```
+├── recipe.yaml
+├── local.yaml
+├── conda.yaml (o requirements.txt)
+├── steps/
+│   ├── ingest.py
+│   ├── split.py
+│   ├── transform.py
+│   ├── train.py
+│   └── evaluate.py
+```
+
+---
+
+### File `recipe.yaml`
+```yaml
+recipe: "wine_classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate: {{EVALUATE_CONFIG}}
+  register: {{REGISTER_CONFIG}}
+
+experiment:
+  name: {{EXPERIMENT_NAME}}
+  tracking_uri: {{TRACKING_URI}}
+  artifact_location: {{ARTIFACT_LOCATION}}
+
+model_registry:
+  model_name: {{MODEL_NAME}}
+```
+
+---
+
+### File `local.yaml`
+```yaml
+EXPERIMENT_NAME: "sklearn_classification_experiment"
+TRACKING_URI: "sqlite:///metadata/mlflow/mlruns.db"
+ARTIFACT_LOCATION: "/metadata/mlflow/mlartifacts"
+MODEL_NAME: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  delimiter: ";"  # Specifica il delimitatore dei CSV
+  loader_method: ingest_data
+
+SPLIT_CONFIG:
+  split_ratios: [0.80, 0.10, 0.10]
+
+TRANSFORM_CONFIG:
+  transformer_fn: transform.transformer_fn
+
+TRAIN_CONFIG:
+  estimator: "sklearn.ensemble.RandomForestClassifier"
+  params:
+    n_estimators: 100
+    random_state: 42
+
+EVALUATE_CONFIG:
+  validation_thresholds:
+    f1_score: 0.8
+    precision_score: 0.75
+    recall_score: 0.7
+
+REGISTER_CONFIG:
+  allow_non_validated_model: false
+```
+
+---
+
+### File `steps/ingest.py`
+```python
+import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def ingest_data(file_paths, delimiter=";"):
+    """
+    Carica e unisce i dataset dei vini bianchi e rossi.
+    """
+    data_white = pd.read_csv(file_paths[0], delimiter=delimiter)
+    data_red = pd.read_csv(file_paths[1], delimiter=delimiter)
+
+    data_white["is_red"] = 0
+    data_red["is_red"] = 1
+
+    data = pd.concat([data_white, data_red], ignore_index=True)
+    logger.info("Dataset caricato. Dimensioni: %s", data.shape)
+    return data
+```
+
+---
+
+### File `steps/transform.py`
+```python
+import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class CustomTransformer:
+    def fit(self, data):
+        return self  # Nessuna logica di fit necessaria per questa trasformazione
+
+    def transform(self, data):
+        data = data.dropna()
+        logger.info("Dati trasformati. Dimensioni dopo pulizia: %s", data.shape)
+        return data
+
+def transformer_fn():
+    return CustomTransformer()
+```
+
+---
+
+### File `steps/train.py`
+```python
+from sklearn.ensemble import RandomForestClassifier
+import mlflow
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def train(X_train, y_train, params):
+    model = RandomForestClassifier(**params)
+    model.fit(X_train, y_train)
+    mlflow.sklearn.log_model(model, "model")
+    logger.info("Modello addestrato e registrato in MLflow")
+    return model
+```
+
+---
+
+### File `steps/evaluate.py`
+```python
+from sklearn.metrics import f1_score, precision_score, recall_score
+import mlflow
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def evaluate(model, X_test, y_test, thresholds):
+    y_pred = model.predict(X_test)
+
+    metrics = {
+        "f1_score": f1_score(y_test, y_pred),
+        "precision_score": precision_score(y_test, y_pred),
+        "recall_score": recall_score(y_test, y_pred)
+    }
+
+    # Log delle metriche in MLflow
+    for name, value in metrics.items():
+        mlflow.log_metric(name, value)
+        logger.info("%s: %.2f", name, value)
+
+    # Verifica delle soglie
+    if not all(metrics[k] >= thresholds[k] for k in thresholds):
+        logger.warning("Il modello non soddisfa tutte le soglie di validazione!")
+        return False
+    return True
+```
+
+---
+
+### File `conda.yaml` (Dependencies)
+```yaml
+name: wine_classification
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pandas
+  - scikit-learn
+  - mlflow
+  - pip
+```
+
+---
+
+### Esecuzione della Recipe
+```bash
+mlflow run .
+```
+
+---
+
+### Spiegazione dei Passaggi Chiave
+1. **Tipo di Recipe**: Classification (identificato dal target binario `is_red`).
+2. **Parametri Dinamici**: Le configurazioni come `split_ratios` e `validation_thresholds` sono gestite tramite Jinja2.
+3. **Registrazione Condizionale**: Se `allow_non_validated_model` è `false`, MLflow registrerà il modello solo se supera tutte le soglie.
+4. **Gestione del Delimitatore**: Specificato esplicitamente `delimiter: ";"` per i file CSV.
+5. **Tracciamento delle Metriche**: Le metriche vengono confrontate con le soglie definite in `local.yaml`.
+
+La struttura è completamente modulare e può essere estesa con ulteriori step (es. `predict`) seguendo lo stesso pattern.

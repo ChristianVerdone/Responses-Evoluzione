@@ -1,0 +1,31 @@
+EXPERIMENT_NAME: "sklearn_classification_experiment"
+TRACKING_URI: "sqlite:///metadata/mlflow/mlruns.db"
+ARTIFACT_LOCATION: "/metadata/mlflow/mlartifacts"
+MODEL_NAME: "wine_classifier"
+
+INGEST_CONFIG:
+  using: csv
+  location: ["./data/winequality-white.csv", "./data/winequality-red.csv"]
+  delimiter: ";"  # Specifica il delimitatore dei CSV
+  loader_method: ingest_data
+
+SPLIT_CONFIG:
+  split_ratios: [0.80, 0.10, 0.10]
+
+TRANSFORM_CONFIG:
+  transformer_fn: transform.transformer_fn
+
+TRAIN_CONFIG:
+  estimator: "sklearn.ensemble.RandomForestClassifier"
+  params:
+    n_estimators: 100
+    random_state: 42
+
+EVALUATE_CONFIG:
+  validation_thresholds:
+    f1_score: 0.8
+    precision_score: 0.75
+    recall_score: 0.7
+
+REGISTER_CONFIG:
+  allow_non_validated_model: false

@@ -1,0 +1,19 @@
+recipe: "wine_classification/v1"
+target_col: "is_red"
+positive_class: 1
+primary_metric: "f1_score"
+steps:
+  ingest: {{INGEST_CONFIG}}
+  split: {{SPLIT_CONFIG}}
+  transform: {{TRANSFORM_CONFIG}}
+  train: {{TRAIN_CONFIG}}
+  evaluate: {{EVALUATE_CONFIG}}
+  register: {{REGISTER_CONFIG}}
+
+experiment:
+  name: {{EXPERIMENT_NAME}}
+  tracking_uri: {{TRACKING_URI}}
+  artifact_location: {{ARTIFACT_LOCATION}}
+
+model_registry:
+  model_name: {{MODEL_NAME}}
